@@ -229,3 +229,12 @@ Explicit extensibility boundaries
 Long-term stability
 
 Tooling, orchestration layers, and automation systems should live above the runtime, not inside it.
+
+Status
+
+Shoots.Runtime is considered stable and sealed.
+
+The core runtime is not under active feature development.
+New capabilities are expected to live above the runtime as external modules or higher-level systems.
+
+Changes that violate the stability policy will not be accepted.
