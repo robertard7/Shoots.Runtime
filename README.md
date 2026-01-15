@@ -1,98 +1,97 @@
 Shoots.Runtime
 
-Shoots.Runtime is a sealed, versioned runtime engine written in .NET 8.
+Shoots.Runtime is a sealed, versioned runtime engine built on .NET 8, designed for deterministic command execution with a strictly enforced runtime boundary.
 
-It is designed to execute structured commands deterministically, with a hard runtime boundary and zero ambient behavior. Once complete, this runtime is intended to be foundational and not modified by downstream tooling, Codex, or AI-assisted refactors.
+It is intended to serve as a foundational execution layer for higher-level systems. Once finalized, the runtime is expected to remain stable and unchanged, with all extensibility occurring outside the core.
 
-If you are looking for extensibility without chaos, or plugins without coupling, this is it.
+Purpose
 
-Design goals
+Shoots.Runtime provides a controlled execution environment with:
 
-Deterministic command execution
+Explicit contracts
+
+Deterministic behavior
+
+Strong isolation between runtime core and extensions
+
+Clear compatibility guarantees
+
+The runtime prioritizes correctness, predictability, and long-term stability over flexibility or convenience.
+
+Key characteristics
 
 Sealed runtime boundary
 
 Contract-only abstractions
 
-Explicit versioning and compatibility rules
+Explicit versioning and compatibility enforcement
 
 Safe external module loading
 
-No hidden dispatch
+No ambient behavior or hidden execution paths
 
-No reflection soup
+No global state
 
-No service locator abuse
+No implicit dispatch
 
-No partial state
+This runtime is intentionally minimal and conservative.
 
-No surprises
-
-This runtime favors clarity over convenience and correctness over cleverness.
-
-Project structure
+Repository structure
 
 Shoots.Runtime.Abstractions
+Contract definitions only.
 
-Contract-only
+Interfaces
 
-Interfaces, records, value types
+Records
 
-No logic
-
-No helpers
-
-No parsing
-
-No execution
+Value types
+No logic, helpers, parsing, or execution.
 
 Shoots.Runtime.Core
-
-Runtime engine
+The runtime engine.
 
 Command registry
 
-Execution semantics
+Execution pipeline
 
 Boundary enforcement
 
 Shoots.Runtime.Loader
+External module discovery and validation.
 
-External module discovery and validation
+Assembly inspection
 
 Version gating
 
 Safe instantiation
 
 Shoots.Runtime.Sandbox
+A development host used to exercise the runtime during implementation.
 
-Test host for exercising the runtime
+Runtime invariants
 
-Used during development only
-
-Runtime invariants (non-negotiable)
-
-These rules are enforced by design and must not be violated:
+The following rules are enforced by design and must not be violated:
 
 All command execution flows through RuntimeEngine.Execute
 
-Modules never call other modules
+Modules do not call other modules
 
-Modules never dispatch commands
+Modules do not dispatch commands
 
 Modules are pure handlers
 
-No global state
+No dynamic dispatch
 
-No async sprawl
+No service locator patterns
 
-No dynamic dispatch hacks
+No partial runtime state
 
-Breaking these rules breaks the runtime.
+Violating these constraints breaks runtime guarantees.
 
 Module contract
 
-Modules implement IRuntimeModule and expose handlers that obey the runtime contract.
+Runtime modules implement IRuntimeModule and expose handlers that follow a strict input/output contract.
 
 Handler input
 
@@ -104,49 +103,47 @@ IRuntimeServices
 
 Handler output
 
-Handlers must return a RuntimeResult.
+Handlers return a RuntimeResult.
 
-RuntimeResult.Output may be only:
+RuntimeResult.Output must be one of the following:
 
 null
 
-an IRuntimeValue
+An IRuntimeValue
 
-a primitive (string, bool, number)
+A primitive value (string, bool, number)
 
-Forbidden:
+The following are not permitted:
 
-anonymous objects
+Anonymous objects
 
-dictionaries
+Dictionaries
 
-dynamic values
+Dynamic or loosely typed values
 
-This restriction is intentional. Structured output is mandatory.
+These restrictions ensure predictable, structured output.
 
-External module loading (Step 9)
+External module loading
 
-Shoots.Runtime supports loading external modules from assemblies without coupling.
+Shoots.Runtime supports loading external modules from assemblies without coupling them to the runtime core.
 
-How loading works
+Loading process
 
-A directory is scanned for *.dll
+A directory is scanned for .dll assemblies
 
-Each assembly must declare a module manifest
+Each assembly must declare a runtime module manifest
 
-Manifest metadata is read (no type scanning)
+Manifest metadata is read without scanning types
 
-Version compatibility is validated
+Runtime version compatibility is validated
 
-The module type is validated
+Module type validity is verified
 
 The module is instantiated
 
-Incompatible or invalid modules are rejected safely
+Invalid or incompatible modules are rejected safely
 
-There is no partial state. A module either loads completely or not at all.
-
-Failures are never fatal to the runtime host.
+Modules are either loaded completely or ignored. Partial activation is not allowed.
 
 Module manifest
 
@@ -165,56 +162,60 @@ using Shoots.Runtime.Loader;
     maxMinor: 9)]
 
 
-If an assembly does not declare a manifest, it is ignored.
+Assemblies without a manifest are ignored.
 
-This avoids reflection scanning, ambiguity, and accidental activation.
+This approach avoids reflection scanning and enforces explicit intent.
 
-Version gating
+Version compatibility
 
 Each module declares:
 
-Minimum supported runtime version
+A minimum supported runtime version
 
-Maximum supported runtime version
+A maximum supported runtime version
 
-A module is rejected if the host runtime version falls outside this range.
+Modules are rejected if the host runtime version falls outside this range.
 
-This prevents silent breakage when the runtime evolves.
+This prevents silent incompatibilities as the runtime evolves.
 
 Loader behavior
 
-The loader is intentionally strict and boring:
+The loader is intentionally conservative:
 
-Bad assemblies are ignored
+Assemblies that fail to load are ignored
 
 Missing manifests are ignored
 
-Incompatible versions are ignored
+Version mismatches are ignored
 
 Instantiation failures are ignored
 
-The runtime always continues in a valid state.
+The runtime host always remains in a valid, stable state.
 
 Status
 
-Steps 1–8: complete and sealed
-
-Step 9: external module loading implemented
-
-Runtime builds cleanly
-
-Sandbox runs
+Core runtime architecture is complete and sealed
 
 Abstractions are frozen
 
-Execution semantics enforced
+Execution semantics are enforced
 
-Once finalized, Shoots.Runtime is not meant to be modified.
+External module loading is implemented
 
-Build tooling lives above it, not inside it.
+Runtime builds cleanly and runs via the sandbox host
 
-Philosophy (short version)
+Once finalized, Shoots.Runtime is intended to remain stable and unchanged.
 
-This runtime exists so higher-level systems can be aggressive, experimental, and fast without contaminating the core.
+Intended usage
 
-The runtime stays boring so everything else can afford not to be.
+Shoots.Runtime is designed to be embedded beneath higher-level systems that require:
+
+Deterministic execution
+
+Strong isolation
+
+Explicit extensibility boundaries
+
+Long-term stability
+
+Tooling, orchestration layers, and automation systems should live above the runtime, not inside it.
