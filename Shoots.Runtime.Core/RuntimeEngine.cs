@@ -6,53 +6,53 @@ using Shoots.Runtime.Abstractions;
 
 namespace Shoots.Runtime.Core;
 
-public sealed class RuntimeEngine
+public sealed class RuntimeEngine : IRuntimeServices
 {
-    private readonly Dictionary<string, IRuntimeModule> _commandIndex;
+    private readonly Dictionary<string, (IRuntimeModule Module, RuntimeCommandSpec Spec)> _index;
 
     public RuntimeEngine(IEnumerable<IRuntimeModule> modules)
     {
-        _commandIndex = new Dictionary<string, IRuntimeModule>(StringComparer.OrdinalIgnoreCase);
+        _index = new Dictionary<string, (IRuntimeModule, RuntimeCommandSpec)>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var m in modules)
         {
-            foreach (var cmd in m.Describe())
+            foreach (var spec in m.Describe())
             {
-                if (_commandIndex.ContainsKey(cmd.CommandId))
-                {
-                    throw new InvalidOperationException(
-                        $"Command '{cmd.CommandId}' already registered");
-                }
+                if (_index.ContainsKey(spec.CommandId))
+                    throw new InvalidOperationException($"Command '{spec.CommandId}' already registered");
 
-                _commandIndex[cmd.CommandId] = m;
+                _index[spec.CommandId] = (m, spec);
             }
         }
     }
 
     public RuntimeResult Execute(RuntimeRequest request, CancellationToken ct = default)
     {
-        if (!_commandIndex.TryGetValue(request.CommandId, out var module))
-        {
-            return RuntimeResult.Fail(
-                RuntimeError.UnknownCommand(request.CommandId)
-            );
-        }
+        if (!_index.TryGetValue(request.CommandId, out var hit))
+            return RuntimeResult.Fail(RuntimeError.UnknownCommand(request.CommandId));
 
         try
         {
-            return module.Execute(request, ct);
+            return hit.Module.Execute(request, ct);
         }
         catch (OperationCanceledException)
         {
-            return RuntimeResult.Fail(
-                RuntimeError.Internal("Execution cancelled")
-            );
+            return RuntimeResult.Fail(RuntimeError.Internal("Execution cancelled"));
         }
         catch (Exception ex)
         {
-            return RuntimeResult.Fail(
-                RuntimeError.Internal("Unhandled exception", ex.ToString())
-            );
+            return RuntimeResult.Fail(RuntimeError.Internal("Unhandled exception", ex.ToString()));
         }
+    }
+
+    public IReadOnlyList<RuntimeCommandSpec> GetAllCommands() =>
+        _index.Values.Select(v => v.Spec)
+             .OrderBy(s => s.CommandId, StringComparer.OrdinalIgnoreCase)
+             .ToArray();
+
+    public RuntimeCommandSpec? GetCommand(string commandId)
+    {
+        if (string.IsNullOrWhiteSpace(commandId)) return null;
+        return _index.TryGetValue(commandId, out var hit) ? hit.Spec : null;
     }
 }

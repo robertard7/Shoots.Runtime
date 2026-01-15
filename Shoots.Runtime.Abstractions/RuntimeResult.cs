@@ -1,13 +1,24 @@
 namespace Shoots.Runtime.Abstractions;
 
-public sealed record RuntimeResult(
-    bool Ok,
-    object? Output,
-    RuntimeError? Error
-)
+public sealed record RuntimeResult
 {
-    public static RuntimeResult Success(object? output = null) => new(true, output, null);
+    public bool Ok { get; init; }
+    public object? Output { get; init; }
+    public RuntimeError? Error { get; init; }
 
-    public static RuntimeResult Fail(string code, string message) =>
-        new(false, null, new RuntimeError(code, message));
+    public static RuntimeResult Success(object? output = null)
+        => new()
+        {
+            Ok = true,
+            Output = output,
+            Error = null
+        };
+
+    public static RuntimeResult Fail(RuntimeError error)
+        => new()
+        {
+            Ok = false,
+            Output = null,
+            Error = error
+        };
 }

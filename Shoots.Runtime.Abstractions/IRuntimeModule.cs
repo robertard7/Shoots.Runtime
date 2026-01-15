@@ -8,6 +8,9 @@ public interface IRuntimeModule
 {
     string ModuleId { get; }          // e.g. "core.exec"
     RuntimeVersion ModuleVersion { get; }
+	RuntimeVersion MinRuntimeVersion { get; }
+	RuntimeVersion MaxRuntimeVersion { get; }
+
 
     /// <summary>
     /// Returns the set of commands exposed by this module.

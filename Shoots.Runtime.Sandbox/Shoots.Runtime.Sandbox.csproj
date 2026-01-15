@@ -12,5 +12,8 @@
     <ProjectReference Include="..\Shoots.Runtime.Core\Shoots.Runtime.Core.csproj" />
     <ProjectReference Include="..\Shoots.Runtime.Language\Shoots.Runtime.Language.csproj" />
   </ItemGroup>
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
 
 </Project>

@@ -3,7 +3,7 @@ using Shoots.Runtime.Abstractions;
 using Shoots.Runtime.Core;
 using Shoots.Runtime.Language;
 
-var host = new RuntimeEngine(new IRuntimeModule[]
+var engine = new RuntimeEngine(new IRuntimeModule[]
 {
     new CoreModule()
 });
@@ -11,7 +11,8 @@ var host = new RuntimeEngine(new IRuntimeModule[]
 var ctx = new RuntimeContext(
     SessionId: Guid.NewGuid().ToString("N"),
     CorrelationId: Guid.NewGuid().ToString("N"),
-    Env: new Dictionary<string, string>()
+    Env: new Dictionary<string, string>(),
+    Services: engine
 );
 
 var json = new JsonSerializerOptions { WriteIndented = false };
@@ -30,7 +31,7 @@ while (true)
     try
     {
         var req = ShootsParser.Parse(line, ctx);
-        var res = host.Execute(req);
+        var res = engine.Execute(req);
 
         if (!res.Ok)
         {
