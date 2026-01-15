@@ -4,6 +4,8 @@ Shoots.Runtime is a sealed, versioned runtime engine built on .NET 8, designed f
 
 It is intended to serve as a foundational execution layer for higher-level systems. Once finalized, the runtime is expected to remain stable and unchanged, with all extensibility occurring outside the core.
 
+This project prioritizes correctness, predictability, and long-term stability over flexibility or convenience.
+
 Purpose
 
 Shoots.Runtime provides a controlled execution environment with:
@@ -14,9 +16,9 @@ Deterministic behavior
 
 Strong isolation between runtime core and extensions
 
-Clear compatibility guarantees
+Clear versioning and compatibility guarantees
 
-The runtime prioritizes correctness, predictability, and long-term stability over flexibility or convenience.
+The runtime intentionally avoids hidden behavior, ambient state, and implicit execution paths.
 
 Key characteristics
 
@@ -28,17 +30,17 @@ Explicit versioning and compatibility enforcement
 
 Safe external module loading
 
-No ambient behavior or hidden execution paths
-
 No global state
 
 No implicit dispatch
 
+No dynamic behavior
+
 This runtime is intentionally minimal and conservative.
 
 Repository structure
-
 Shoots.Runtime.Abstractions
+
 Contract definitions only.
 
 Interfaces
@@ -46,28 +48,36 @@ Interfaces
 Records
 
 Value types
+
 No logic, helpers, parsing, or execution.
 
 Shoots.Runtime.Core
+
 The runtime engine.
 
 Command registry
 
 Execution pipeline
 
-Boundary enforcement
+Runtime boundary enforcement
+
+All command execution flows through a single, controlled entry point.
 
 Shoots.Runtime.Loader
+
 External module discovery and validation.
 
 Assembly inspection
 
 Version gating
 
-Safe instantiation
+Safe module instantiation
+
+No coupling to the runtime core.
 
 Shoots.Runtime.Sandbox
-A development host used to exercise the runtime during implementation.
+
+A development host used to exercise the runtime during implementation and validation.
 
 Runtime invariants
 
@@ -133,7 +143,7 @@ A directory is scanned for .dll assemblies
 
 Each assembly must declare a runtime module manifest
 
-Manifest metadata is read without scanning types
+Manifest metadata is read (no type scanning)
 
 Runtime version compatibility is validated
 
@@ -141,7 +151,7 @@ Module type validity is verified
 
 The module is instantiated
 
-Invalid or incompatible modules are rejected safely
+Invalid or incompatible modules are rejected safely.
 
 Modules are either loaded completely or ignored. Partial activation is not allowed.
 
