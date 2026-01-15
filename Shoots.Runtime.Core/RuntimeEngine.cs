@@ -4,21 +4,21 @@ namespace Shoots.Runtime.Core;
 
 public sealed class RuntimeEngine : IRuntimeHost
 {
-    public RuntimeResult Execute(RuntimeInput input)
-    {
-        if (string.IsNullOrWhiteSpace(input.Command))
-        {
-            return new RuntimeResult(
-                false,
-                null,
-                new RuntimeError("invalid_command", "Command cannot be empty")
-            );
-        }
+    public RuntimeVersion Version { get; } = new(0, 1, 0);
 
-        return new RuntimeResult(
-            true,
-            $"Executed: {input.Command}",
-            null
-        );
+    public RuntimeResult Execute(RuntimeRequest request, CancellationToken ct = default)
+    {
+        if (request is null) return RuntimeResult.Fail("null_request", "Request cannot be null.");
+        if (string.IsNullOrWhiteSpace(request.CommandId))
+            return RuntimeResult.Fail("invalid_command", "CommandId cannot be empty.");
+
+        // Placeholder behavior until modules are wired in
+        return RuntimeResult.Success(new
+        {
+            request.CommandId,
+            Args = request.Args,
+            request.Context.SessionId,
+            request.Context.CorrelationId
+        });
     }
 }
