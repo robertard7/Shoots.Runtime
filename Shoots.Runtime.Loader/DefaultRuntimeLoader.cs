@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Shoots.Runtime.Abstractions;
 
 namespace Shoots.Runtime.Loader;
@@ -21,22 +21,51 @@ public sealed class DefaultRuntimeLoader : IRuntimeLoader
             }
             catch
             {
-                continue; // bad assembly = ignored, never fatal
+                continue; // bad assembly = ignored
             }
 
-            foreach (var type in asm.GetTypes())
+            RuntimeModuleManifestAttribute? manifest;
+            try
             {
-                if (type.IsAbstract || !typeof(IRuntimeModule).IsAssignableFrom(type))
-                    continue;
+                manifest = asm.GetCustomAttribute<RuntimeModuleManifestAttribute>();
+            }
+            catch
+            {
+                continue;
+            }
 
-                if (Activator.CreateInstance(type) is IRuntimeModule module)
+            if (manifest is null)
+                continue;
+
+            if (string.IsNullOrWhiteSpace(manifest.ModuleId))
+                continue;
+
+            var moduleType = manifest.ModuleType;
+
+            if (moduleType.IsAbstract)
+                continue;
+
+            if (!typeof(IRuntimeModule).IsAssignableFrom(moduleType))
+                continue;
+
+            if (moduleType.GetConstructor(Type.EmptyTypes) is null)
+                continue;
+
+            try
+            {
+                if (Activator.CreateInstance(moduleType) is IRuntimeModule module)
                     modules.Add(module);
+            }
+            catch
+            {
+                continue;
             }
         }
 
         return modules;
     }
 
+    // Compatibility is evaluated by the host, not during discovery.
     public bool IsCompatible(
         RuntimeVersion hostVersion,
         RuntimeVersion moduleVersion,
