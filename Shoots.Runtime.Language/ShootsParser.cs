@@ -5,26 +5,33 @@ namespace Shoots.Runtime.Language;
 
 public static class ShootsParser
 {
-    public static RuntimeRequest Parse(
-        string input,
-        RuntimeContext context)
+    public static RuntimeRequest Parse(string input, RuntimeContext context)
     {
         if (string.IsNullOrWhiteSpace(input))
-            throw new ArgumentException("Empty command");
+            throw new ArgumentException("parse_error: empty command");
 
         var tokens = Tokenize(input);
+        if (tokens.Count == 0)
+            throw new ArgumentException("parse_error: no tokens");
+
         var commandId = tokens[0];
 
-        var args = new Dictionary<string, object?>();
+        var args = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
 
         for (int i = 1; i < tokens.Count; i++)
         {
             var part = tokens[i];
             var idx = part.IndexOf('=');
-            if (idx <= 0) continue;
 
-            var key = part[..idx];
+            // allow bare args to be ignored (future-proofing)
+            if (idx <= 0)
+                continue;
+
+            var key = part[..idx].Trim();
             var value = part[(idx + 1)..];
+
+            if (key.Length == 0)
+                continue;
 
             args[key] = value;
         }
@@ -48,11 +55,7 @@ public static class ShootsParser
 
             if (char.IsWhiteSpace(c) && !quoted)
             {
-                if (sb.Length > 0)
-                {
-                    result.Add(sb.ToString());
-                    sb.Clear();
-                }
+                Flush();
             }
             else
             {
@@ -60,9 +63,14 @@ public static class ShootsParser
             }
         }
 
-        if (sb.Length > 0)
-            result.Add(sb.ToString());
-
+        Flush();
         return result;
+
+        void Flush()
+        {
+            if (sb.Length == 0) return;
+            result.Add(sb.ToString());
+            sb.Clear();
+        }
     }
 }

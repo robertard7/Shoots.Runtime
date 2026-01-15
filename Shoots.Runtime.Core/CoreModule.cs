@@ -12,7 +12,7 @@ public sealed class CoreModule : IRuntimeModule
         {
             new RuntimeCommandSpec(
                 "core.ping",
-                "Health check",
+                "Health check. Returns pong=true and echoes msg if provided.",
                 new[]
                 {
                     new RuntimeArgSpec("msg", "string", false, "Optional message")
@@ -22,10 +22,15 @@ public sealed class CoreModule : IRuntimeModule
 
     public RuntimeResult Execute(RuntimeRequest request, CancellationToken ct = default)
     {
-        return RuntimeResult.Success(new
+        if (request.CommandId.Equals("core.ping", StringComparison.OrdinalIgnoreCase))
         {
-            pong = true,
-            echo = request.Args.TryGetValue("msg", out var v) ? v : null
-        });
+            return RuntimeResult.Success(new
+            {
+                pong = true,
+                echo = request.Args.TryGetValue("msg", out var v) ? v?.ToString() ?? "" : ""
+            });
+        }
+
+        return RuntimeResult.Fail("unknown_command", request.CommandId);
     }
 }
