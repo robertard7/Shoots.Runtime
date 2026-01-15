@@ -1,29 +1,50 @@
 ﻿using Shoots.Runtime.Abstractions;
 using Shoots.Runtime.Core;
-using Shoots.Runtime.Loader;
+using Shoots.Runtime.Language;
 
-var loader = new DefaultRuntimeLoader();
-
-var modules = new IRuntimeModule[]
+// Create runtime host with sealed modules
+var host = new RuntimeEngine(new IRuntimeModule[]
 {
     new CoreModule()
-};
+});
 
-var host = new RuntimeEngine(modules);
-
+// Create execution context (stable for session)
 var ctx = new RuntimeContext(
     SessionId: Guid.NewGuid().ToString("N"),
     CorrelationId: Guid.NewGuid().ToString("N"),
     Env: new Dictionary<string, string>()
 );
 
-var req = new RuntimeRequest(
-    CommandId: "core.ping",
-    Args: new Dictionary<string, object?> { ["msg"] = "sealed" },
-    Context: ctx
-);
+Console.WriteLine("Shoots Runtime Sandbox");
+Console.WriteLine("Type commands (empty line to exit)");
+Console.WriteLine();
 
-var res = host.Execute(req);
+// Interactive loop
+while (true)
+{
+    Console.Write("> ");
+    var line = Console.ReadLine();
 
-Console.WriteLine(res.Ok);
-Console.WriteLine(res.Output);
+    if (string.IsNullOrWhiteSpace(line))
+        break;
+
+    try
+    {
+        // Parse Shoots command language → RuntimeRequest
+        var req = ShootsParser.Parse(line, ctx);
+
+        // Execute via runtime
+        var res = host.Execute(req);
+
+        // Print result
+        if (res.Ok)
+            Console.WriteLine(res.Output);
+        else
+            Console.WriteLine($"error: {res.Error}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"fatal: {ex.Message}");
+    }
+}
+
